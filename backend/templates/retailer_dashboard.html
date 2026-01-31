@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Retailer Dashboard</title>
+    <style>
+      body {
+        font-family: Arial;
+        background: #faf7f0;
+        text-align: center;
+        margin-top: 40px;
+      }
+      .batch-box {
+        background: #e8f5e9;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px auto;
+        width: 45%;
+        text-align: left;
+      }
+      button {
+        background: #9c27b0;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #qrImage {
+        margin-left: 620px;
+      }
+      #logout {
+        float: right;
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>🛒 Retailer Dashboard</h2>
+    <p>Welcome, {{ user }}</p>
+
+    <!-- ===================== BATCH LIST ===================== -->
+    <section>
+      <h2>All Local Batches</h2>
+      <button id="refreshBtn">🔄 Refresh List</button>
+      <div id="batchList"></div>
+    </section>
+
+    <!-- ===================== QR SECTION ===================== -->
+    <!-- ===================== QR SECTION ===================== -->
+    <section id="qrSection">
+      <h2>Generate QR Code for Batch</h2>
+
+      <input
+        type="number"
+        id="qrBatchId"
+        placeholder="Enter Batch ID"
+        required
+      />
+      <button id="qrBtn">Generate QR Code</button>
+
+      <p id="qrMsg"></p>
+
+      <!-- SINGLE QR IMAGE (correct) -->
+      <img id="qrImage" style="width: 250px; margin-top: 20px; display: none" />
+    </section>
+
+    <br /><br />
+    <button>
+      <a id="logout" href="{{ url_for('logout') }}">Logout</a>
+    </button>
+
+    <!-- ===================== SCRIPTS ===================== -->
+    <script>
+      const apiBase = "http://127.0.0.1:5000";
+
+      // ===================== REFRESH BATCH LIST =====================
+      document
+        .getElementById("refreshBtn")
+        .addEventListener("click", loadBatches);
+
+      async function loadBatches() {
+        const res = await fetch(`${apiBase}/local_batches`);
+        const data = await res.json();
+        const list = document.getElementById("batchList");
+        list.innerHTML = "";
+
+        if (!data.batches || data.batches.length === 0) {
+          list.innerHTML = "<p>No batches found.</p>";
+          return;
+        }
+
+        data.batches.forEach((b) => {
+          const div = document.createElement("div");
+          div.className = "batch-box";
+          div.innerHTML = `
+              <b>ID:</b> ${b.id} <br>
+              <b>Origin:</b> ${b.origin} <br>
+              <b>Farm:</b> ${b.farm} <br>
+              <b>IPFS:</b> ${b.ipfsHash} <br>
+              <b>TxHash:</b> ${b.tx_hash} <br>
+              <b>Status:</b> ${b.status} <br>
+              <b>Color:</b> ${b.color || "-"} <br>
+              <b>Temp:</b> ${b.temperature || "-"} °C
+          `;
+          list.appendChild(div);
+        });
+      }
+
+      // Load list automatically on page open
+      loadBatches();
+
+      // ===================== GENERATE QR =====================
+      document.getElementById("qrBtn").addEventListener("click", async () => {
+        const batchId = document.getElementById("qrBatchId").value;
+
+        if (!batchId) {
+          alert("Please enter a Batch ID!");
+          return;
+        }
+
+        const res = await fetch(`${apiBase}/generate_qr`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batchId }),
+        });
+
+        const data = await res.json();
+
+        if (!data || data.error) {
+          alert("Error: " + (data?.error || "Invalid response from server"));
+          return;
+        }
+
+        if (!data.qr_url) {
+          console.error("Backend did not return qr_url:", data);
+          alert(
+            "QR code generation failed: qr_url missing from server response."
+          );
+          return;
+        }
+
+        // Always ensure correct path
+        const qrPath = data.qr_url.startsWith("/")
+          ? data.qr_url
+          : "/" + data.qr_url;
+
+        const qrImg = document.getElementById("qrImage");
+        qrImg.src = qrPath;
+        qrImg.style.display = "block";
+
+        document.getElementById("qrMsg").innerHTML = `
+        QR Code Generated!<br>
+        <a href="${data.trace_url}" target="_blank">Open Traceability Page</a>
+    `;
+      });
+    </script>
+  </body>
+</html>

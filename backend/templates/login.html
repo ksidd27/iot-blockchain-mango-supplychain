@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Mango Blockchain App</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #c0e8a8, #f4f4f4);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .login-container {
+        background-color: white;
+        padding: 50px;
+        padding-top: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        width: 350px;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #2c6e49;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      input {
+        width: 85%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      button {
+        width: 50%;
+        background-color: #2c6e49;
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background-color: #25563b;
+      }
+
+      .message {
+        text-align: center;
+        color: red;
+        margin-top: 10px;
+      }
+
+      .link {
+        text-align: left;
+        margin-top: 15px;
+      }
+
+      .link a {
+        color: #2c6e49;
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      .link a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h2>
+        🥭 <br />
+        Login To Mango Blockchain App
+      </h2>
+      <form method="POST" action="/login">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Enter username"
+          required
+        />
+
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Enter password"
+          required
+        />
+
+        <button type="submit">Login</button>
+      </form>
+
+      {% if error %}
+      <p class="message">{{ error }}</p>
+      {% endif %} {% if success %}
+      <p class="message" style="color: green">{{ success }}</p>
+      {% endif %}
+
+      <div class="link">
+        <p>New user? <a href="/register">Register here</a></p>
+      </div>
+    </div>
+  </body>
+</html>

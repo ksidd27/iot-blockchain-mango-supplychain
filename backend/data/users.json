@@ -1,0 +1,33 @@
+{
+  "exporter": {
+    "address": "0xb91334d4a48b09a5035Cc392127Cc5135f033C14",
+    "name": "Mango Exporter"
+  },
+  "users": [
+    {
+      "username": "Siddharth",
+      "password": "sidd1234",
+      "role": "farmer"
+    },
+    {
+      "username": "srijita",
+      "password": "srij4321",
+      "role": "wholesaler"
+    },
+    {
+      "username": "Rishabh",
+      "password": "rish1234",
+      "role": "farmer"
+    },
+    {
+      "username": "Raag",
+      "password": "raag1234",
+      "role": "distributor"
+    },
+    {
+      "username": "Manav",
+      "password": "manav1234",
+      "role": "retailer"
+    }
+  ]
+}

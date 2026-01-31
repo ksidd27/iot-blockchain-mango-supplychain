@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wholesaler Dashboard</title>
+    <style>
+      body {
+        font-family: Arial;
+        background: #eef6f8;
+        text-align: center;
+        margin-top: 40px;
+      }
+      form {
+        background: white;
+        display: inline-block;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #ccc;
+      }
+      input {
+        width: 250px;
+        padding: 10px;
+        margin: 8px;
+        border-radius: 5px;
+        border: 1px solid #aaa;
+      }
+      button {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #logout {
+        float: right;
+        color: rgb(0, 0, 0);
+      }
+    </style>
+  </head>
+  <body>
+    <h2>🏭 Wholesaler Dashboard</h2>
+    <p>Welcome, {{ user }}</p>
+
+    <!-- UPDATE STATUS -->
+    <section id="update">
+      <h2>Update Batch Status</h2>
+      <form id="updateForm">
+        <input type="number" id="batchId" placeholder="Batch ID" required />
+        <br />
+        <input type="text" id="newstatus" placeholder="New Status" required />
+        <br />
+        <input
+          type="text"
+          id="ipfsHashUpdate"
+          placeholder="IPFS Hash (optional)"
+        />
+        <br />
+        <input type="text" id="colorUpdate" placeholder="Color (e.g. Yellow)" />
+        <br />
+        <input
+          type="number"
+          id="temperatureUpdate"
+          placeholder="Temperature (°C)"
+        />
+        <br />
+
+        <button type="submit">Update Status</button>
+      </form>
+      <p id="updateMsg"></p>
+    </section>
+    <br />
+    <br />
+
+    <!-- VIEW LOCAL BATCHES -->
+    <section id="batches">
+      <h2>All Batches</h2>
+      <button id="refreshBtn">🔄 Refresh List</button>
+      <div id="batchList"></div>
+    </section>
+
+    <script>
+      const apiBase = "http://127.0.0.1:5000";
+      // UPDATE STATUS
+      document
+        .getElementById("updateForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const data = {
+            id: document.getElementById("batchId").value,
+            status: document.getElementById("newstatus").value,
+            ipfsHash: document.getElementById("ipfsHashUpdate").value,
+            color: document.getElementById("colorUpdate").value,
+            temperature: document.getElementById("temperatureUpdate").value,
+          };
+
+          const res = await fetch(`${apiBase}/update_status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await res.json();
+          document.getElementById("updateMsg").innerText =
+            result.message || result.error;
+        });
+
+      // ✅ REFRESH LOCAL BATCH LIST
+
+      document
+        .getElementById("refreshBtn")
+        .addEventListener("click", async () => {
+          const res = await fetch(`${apiBase}/local_batches`);
+          const data = await res.json();
+          const batches = data.batches || [];
+          const div = document.getElementById("batchList");
+
+          div.innerHTML = batches
+            .map(
+              (b) => `
+              <div style="background:#e8f5e9; 
+              padding:10px; 
+              border-radius:8px; 
+              margin-bottom:10px;
+              margin-left: 450px;
+              margin-right: 450px;
+              margin-top: 10px;
+              text-align: left;
+              ">
+                <b>ID:</b> ${b.id} <br>
+                <b>Origin:</b> ${b.origin} <br>
+                <b>Farm:</b> ${b.farm} <br>
+                <b>IPFS:</b> ${b.ipfsHash} <br>
+                <b>TxHash:</b> ${b.tx_hash} <br>
+                <b>Status:</b> ${b.status} <br>
+                <b>Color:</b> ${b.color || "-"} <br>
+                <b>Temp:</b> ${b.temperature || "-"} °C
+              </div>
+            `
+            )
+            .join("");
+        });
+    </script>
+
+    <br />
+    <button>
+      <a id="logout" href="{{ url_for('logout') }}">Logout</a>
+    </button>
+  </body>
+</html>

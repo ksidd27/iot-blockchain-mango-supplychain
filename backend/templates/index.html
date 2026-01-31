@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mango Blockchain Tracker 🥭</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <h1>🥭 Mango Export Blockchain Traceability</h1>
+
+    <!-- ✅ CREATE NEW BATCH SECTION -->
+    <section id="create">
+      <h2>Create New Mango Batch</h2>
+      <form id="createForm">
+        <input
+          type="text"
+          id="origin"
+          placeholder="Origin (Location / City)"
+          required
+        />
+        <!-- ✅ Added missing 'farm' field -->
+        <input type="text" id="farm" placeholder="Farm Name" required />
+        <input type="text" id="exporter" placeholder="Exporter Name" required />
+        <input
+          type="text"
+          id="ipfsHash"
+          placeholder="IPFS Hash (Optional)"
+          required
+        />
+        <button type="submit">Create Batch</button>
+      </form>
+      <p id="createMsg"></p>
+    </section>
+
+    <!-- ✅ UPDATE BATCH STATUS -->
+    <section id="update">
+      <h2>Update Batch Status</h2>
+      <form id="updateForm">
+        <input type="number" id="batchId" placeholder="Batch ID" required />
+        <input type="text" id="newstatus" placeholder="New Status" required />
+        <button type="submit">Update Status</button>
+      </form>
+      <p id="updateMsg"></p>
+    </section>
+
+    <!-- ✅ DISPLAY ALL BATCHES -->
+    <section id="batches">
+      <h2>All Local Batches</h2>
+      <button id="refreshBtn">🔄 Refresh List</button>
+      <div id="batchList"></div>
+    </section>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+  </body>
+</html>

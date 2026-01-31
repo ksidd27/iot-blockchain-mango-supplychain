@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Farmer Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <!-- Socket.IO for real-time updates -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #fffef9;
+        margin: 5;
+        padding: 20px;
+      }
+      h1,
+      h2 {
+        color: #2e7d32;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 350px;
+        background: #f1f8e9;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        margin-left: auto;
+        margin-right: auto;
+      }
+      input,
+      button,
+      select {
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      button {
+        background: #43a047;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #388e3c;
+      }
+      section {
+        margin-bottom: 30px;
+      }
+      #logout {
+        float: right;
+        color: rgb(0, 0, 0);
+      }
+      .batch-item {
+        background: #e8f5e9;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        margin-right: 300px;
+        margin-top: 10px;
+        position: relative;
+      }
+      .batch-checkbox {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        transform: scale(1.5);
+      }
+      .ganache-block {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .tx-item {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px 0;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      #ganacheBlocks {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+      }
+      .pending-badge {
+        background: #ff9800;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-left: 10px;
+      }
+      .onchain-badge {
+        background: #4caf50;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>🥭 Farmer Dashboard – Welcome, {{ user }}</h1>
+    <a id="logout" href="{{ url_for('logout') }}">🚪 Logout</a>
+
+    <!-- ✅ GENERATE RANDOM BATCH -->
+    <section id="randomBatch">
+      <h2>🎲 Generate Random Batches</h2>
+      <button id="generateRandomBtn">Generate Random Mango Batch</button>
+      <p id="randomMsg"></p>
+    </section>
+
+    <!-- ✅ CREATE NEW BATCH (Manual) -->
+    <section id="create">
+      <h2>✏️ Create Manual Batch</h2>
+      <form id="createForm">
+        <input
+          type="text"
+          id="origin"
+          placeholder="Origin (Location / City)"
+          required
+        />
+        <input type="text" id="farm" placeholder="Farm Name" required />
+        <input type="text" id="exporter" placeholder="Exporter Name" required />
+        <input
+          type="text"
+          id="ipfsHash"
+          placeholder="IPFS Hash (Optional)"
+          required
+        />
+        <input
+          type="text"
+          id="color"
+          placeholder="Color (e.g., Yellow, Green)"
+        />
+        <input
+          type="number"
+          id="temperature"
+          placeholder="Temperature (°C)"
+          step="0.1"
+        />
+        <input
+          type="text"
+          id="condition"
+          placeholder="Condition (Good / Optimal)"
+        />
+        <button type="submit">Create Manual Batch</button>
+      </form>
+      <p id="createMsg"></p>
+    </section>
+
+    <!-- ✅ BATCH SELECTION FOR BLOCK CREATION -->
+    <section id="batchSelection">
+      <h2>📋 Pending Batches → Create Blockchain Block</h2>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px">
+        <button id="refreshPendingBtn">🔄 Refresh Pending</button>
+        <button id="createBlockBtn" disabled>Create Block (0 selected)</button>
+      </div>
+      <div id="pendingBatchList"></div>
+      <p id="selectionMsg"></p>
+    </section>
+
+    <!-- ✅ VIEW ALL BATCHES & GANACHE BLOCKS -->
+    <section id="batches">
+      <h2>🔗 All Batches & Ganache Blocks</h2>
+      <div style="display: flex; gap: 20px">
+        <button id="refreshAllBtn">🔄 Refresh All</button>
+        <button id="refreshGanacheBtn">🌐 Refresh Ganache</button>
+      </div>
+
+      <!-- All Batches -->
+      <div style="margin-top: 20px">
+        <h3>📦 All Batches</h3>
+        <div id="allBatchList"></div>
+      </div>
+
+      <!-- Real-time Ganache Blocks -->
+      <div style="margin-top: 20px">
+        <h3>⛓️ Live Ganache Blocks (Real-time)</h3>
+        <div id="ganacheBlocks"></div>
+      </div>
+    </section>
+
+    <script>
+      const apiBase = "http://127.0.0.1:5000";
+      let allBatches = [];
+      let selectedBatchIds = new Set();
+      let socket = null;
+
+      // Socket.IO for real-time Ganache updates
+      function initSocketIO() {
+        socket = io(apiBase);
+        socket.on("connect", () => {
+          console.log("✅ Connected to real-time Ganache updates");
+        });
+        socket.on("new_ganache_block", (blockData) => {
+          console.log("🔗 New Ganache block:", blockData);
+          renderGanacheBlocks(blockData);
+        });
+      }
+
+      // ✅ GENERATE RANDOM BATCH
+      document
+        .getElementById("generateRandomBtn")
+        .addEventListener("click", async () => {
+          const btn = document.getElementById("generateRandomBtn");
+          btn.textContent = "Generating...";
+          btn.disabled = true;
+
+          try {
+            const res = await fetch(`${apiBase}/generate_random_batch`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+            const result = await res.json();
+
+            document.getElementById("randomMsg").innerText =
+              result.message || result.error || "Batch generated!";
+
+            if (result.batch) {
+              refreshPendingBatches();
+              refreshAllBatches();
+            }
+          } catch (e) {
+            document.getElementById("randomMsg").innerText =
+              "Error: " + e.message;
+          }
+
+          btn.textContent = "Generate Random Mango Batch";
+          btn.disabled = false;
+        });
+
+      // ✅ CREATE MANUAL BATCH (existing)
+      document
+        .getElementById("createForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const data = {
+            origin: document.getElementById("origin").value,
+            farm: document.getElementById("farm").value,
+            exporter: document.getElementById("exporter").value,
+            ipfsHash: document.getElementById("ipfsHash").value,
+            color: document.getElementById("color").value,
+            temperature: document.getElementById("temperature").value,
+            condition: document.getElementById("condition").value,
+          };
+
+          const res = await fetch(`${apiBase}/create_batch`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const result = await res.json();
+          document.getElementById("createMsg").innerText =
+            result.message || result.error;
+
+          if (result.batch) {
+            refreshAllBatches();
+          }
+          document.getElementById("createForm").reset();
+        });
+
+      // ✅ CREATE BLOCK WITH SELECTED BATCHES
+      document
+        .getElementById("createBlockBtn")
+        .addEventListener("click", async () => {
+          const batchIds = Array.from(selectedBatchIds);
+          if (batchIds.length === 0) return;
+
+          const btn = document.getElementById("createBlockBtn");
+          btn.textContent = "Creating Block...";
+          btn.disabled = true;
+
+          try {
+            const res = await fetch(`${apiBase}/create_block`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ batch_ids: batchIds }),
+            });
+
+            const result = await res.json();
+            document.getElementById("selectionMsg").innerText =
+              result.message || "Block created successfully!";
+
+            selectedBatchIds.clear();
+            updateCreateBlockBtn();
+            refreshPendingBatches();
+            refreshAllBatches();
+          } catch (e) {
+            document.getElementById("selectionMsg").innerText =
+              "Error: " + e.message;
+          }
+
+          btn.textContent = `Create Block (${selectedBatchIds.size} selected)`;
+          btn.disabled = selectedBatchIds.size === 0;
+        });
+
+      // ✅ CHECKBOX SELECTION HANDLER
+      function setupBatchSelection(batch, index) {
+        const checkbox = document.querySelector(`#batch_${index}`);
+        checkbox.addEventListener("change", (e) => {
+          const batchId = batch.id;
+          if (e.target.checked) {
+            selectedBatchIds.add(batchId);
+          } else {
+            selectedBatchIds.delete(batchId);
+          }
+          updateCreateBlockBtn();
+        });
+      }
+
+      function updateCreateBlockBtn() {
+        const btn = document.getElementById("createBlockBtn");
+        const count = selectedBatchIds.size;
+        btn.textContent = `Create Block (${count} selected)`;
+        btn.disabled = count === 0;
+      }
+
+      // ✅ REFRESH PENDING BATCHES (for block creation)
+      async function refreshPendingBatches() {
+        const res = await fetch(`${apiBase}/local_batches`);
+        const data = await res.json();
+        allBatches = data.batches || [];
+
+        // Filter pending batches (no block_number or status != "On Blockchain")
+        const pendingBatches = allBatches.filter(
+          (b) => !b.block_number && b.status !== "On Blockchain"
+        );
+
+        const div = document.getElementById("pendingBatchList");
+        div.innerHTML = pendingBatches
+          .map(
+            (batch, index) => `
+          <div class="batch-item">
+            <input type="checkbox" id="batch_${index}" class="batch-checkbox" value="${
+              batch.id
+            }">
+            <b>ID:</b> ${
+              batch.id
+            } <span class="pending-badge">PENDING</span><br>
+            <b>Origin:</b> ${batch.origin}<br>
+            <b>Farm:</b> ${batch.farm}<br>
+            <b>Exporter:</b> ${batch.exporter}<br>
+            <b>Color:</b> ${batch.color || "-"}<br>
+            <b>Temp:</b> ${batch.temperature || "-"}°C<br>
+            <b>Created:</b> ${batch.created_by} (${batch.timestamp?.slice(
+              0,
+              10
+            )})
+          </div>
+        `
+          )
+          .join("");
+
+        // Setup checkboxes after rendering
+        pendingBatches.forEach((batch, index) =>
+          setupBatchSelection(batch, index)
+        );
+      }
+
+      // ✅ REFRESH ALL BATCHES
+      async function refreshAllBatches() {
+        const res = await fetch(`${apiBase}/local_batches`);
+        const data = await res.json();
+        allBatches = data.batches || [];
+
+        const div = document.getElementById("allBatchList");
+        div.innerHTML = allBatches
+          .map(
+            (b) => `
+          <div class="batch-item" style="background: ${
+            b.block_number || b.status === "On Blockchain"
+              ? "#c8e6c9"
+              : "#fff3e0"
+          };">
+            <b>ID:</b> ${b.id} 
+            ${
+              b.block_number
+                ? `<span class="onchain-badge">ON-CHAIN</span>`
+                : ""
+            }
+            <br>
+            <b>Origin:</b> ${b.origin} | <b>Farm:</b> ${b.farm}<br>
+            <b>IPFS:</b> ${b.ipfsHash?.slice(0, 20)}... <br>
+            ${b.tx_hash ? `<b>TxHash:</b> ${b.tx_hash?.slice(0, 20)}...` : ""}
+            ${b.block_number ? `<br><b>Block:</b> #${b.block_number}` : ""}
+            <br><b>Status:</b> ${b.status || "-"}<br>
+            <b>Color:</b> ${b.color || "-"} | <b>Temp:</b> ${
+              b.temperature || "-"
+            } °C
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      // ✅ RENDER GANACHE BLOCKS
+      async function renderGanacheBlocks(blockData = null) {
+        if (blockData) {
+          // Real-time update
+          const blocksDiv = document.getElementById("ganacheBlocks");
+          const blockHTML = `
+            <div class="ganache-block">
+              <b>🆕 Block #${blockData.block_number}</b><br>
+              <b>Hash:</b> ${blockData.block_hash?.slice(0, 20)}...<br>
+              <b>Time:</b> ${blockData.real_time}<br>
+              <b>Txs:</b> ${blockData.transactions.length}
+              ${blockData.transactions
+                .map(
+                  (tx) => `
+                <div class="tx-item">
+                  📄 ${tx.tx_hash?.slice(0, 20)}... 
+                  👤 from: ${tx.from?.slice(0, 10)}...
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          `;
+          blocksDiv.insertAdjacentHTML("afterbegin", blockHTML);
+
+          // Auto-scroll to top for new blocks
+          blocksDiv.scrollTop = 0;
+          return;
+        }
+
+        // Initial load
+        try {
+          const res = await fetch(`${apiBase}/ganache_blocks`);
+          const data = await res.json();
+          const blocksDiv = document.getElementById("ganacheBlocks");
+          blocksDiv.innerHTML = (data.blocks || [])
+            .map(
+              (block) => `
+            <div class="ganache-block">
+              <b>Block #${block.block_number}</b><br>
+              <b>Hash:</b> ${block.block_hash?.slice(0, 20)}...<br>
+              <b>Time:</b> ${block.real_time}<br>
+              <b>Txs:</b> ${block.transactions.length}
+              ${block.transactions
+                .map(
+                  (tx) => `
+                <div class="tx-item">
+                  📄 ${tx.tx_hash?.slice(0, 20)}... 
+                  👤 from: ${tx.from?.slice(0, 10)}...
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          `
+            )
+            .join("");
+        } catch (e) {
+          console.log("Ganache blocks not available yet");
+        }
+      }
+
+      // ✅ EVENT LISTENERS
+      document
+        .getElementById("refreshPendingBtn")
+        .addEventListener("click", refreshPendingBatches);
+      document
+        .getElementById("refreshAllBtn")
+        .addEventListener("click", refreshAllBatches);
+      document
+        .getElementById("refreshGanacheBtn")
+        .addEventListener("click", () => renderGanacheBlocks());
+
+      // Initialize
+      initSocketIO();
+      refreshPendingBatches();
+      refreshAllBatches();
+      renderGanacheBlocks();
+    </script>
+  </body>
+</html>

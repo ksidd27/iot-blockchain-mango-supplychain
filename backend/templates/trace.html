@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mango Batch Traceability</title>
+
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: auto;
+      }
+      h2 {
+        text-align: center;
+        color: #2e7d32;
+      }
+      .row {
+        margin-bottom: 10px;
+      }
+      .label {
+        font-weight: bold;
+        color: #555;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h2>🥭 Mango Batch Traceability</h2>
+
+      <div class="row"><span class="label">Batch ID:</span> {{ batch.id }}</div>
+      <div class="row">
+        <span class="label">Origin:</span> {{ batch.origin }}
+      </div>
+      <div class="row"><span class="label">Farm:</span> {{ batch.farm }}</div>
+      <div class="row">
+        <span class="label">Exporter:</span> {{ batch.exporter }}
+      </div>
+      <div class="row">
+        <span class="label">Status:</span> {{ batch.status }}
+      </div>
+      <div class="row"><span class="label">Color:</span> {{ batch.color }}</div>
+      <div class="row">
+        <span class="label">Temperature:</span> {{ batch.temperature }} °C
+      </div>
+      <div class="row">
+        <span class="label">Condition:</span> {{ batch.condition }}
+      </div>
+      <div class="row">
+        <span class="label">IPFS Hash:</span> {{ batch.ipfsHash }}
+      </div>
+
+      <hr />
+
+      <div class="row">
+        <span class="label">Blockchain Tx:</span> {{ batch.tx_hash }}
+      </div>
+      <div class="row">
+        <span class="label">Created By:</span> {{ batch.created_by }}
+      </div>
+      <div class="row">
+        <span class="label">Timestamp:</span> {{ batch.timestamp }}
+      </div>
+
+      <hr />
+
+      <p style="text-align: center; color: #666">
+        Powered by Blockchain • IoT • Traceability System
+      </p>
+    </div>
+  </body>
+</html>

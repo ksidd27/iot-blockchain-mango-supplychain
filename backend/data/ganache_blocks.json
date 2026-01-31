@@ -1,0 +1,17 @@
+{
+  "blocks": [
+    {
+      "block_number": 2,
+      "block_hash": "64385a4a9e0704599c0ae575478c370c2547c213c94e9410aba2b5b1e9b749c8",
+      "timestamp": 1765010858,
+      "real_time": "2025-12-06 14:17:38",
+      "transactions": [
+        {
+          "tx_hash": "e1cbd72296ae36636df13d01fa594b9fe1cc1ffc7302ae4eb34d2b90ae8c9b64",
+          "from": "0x2D485a42fE61e30DF7B44D3268DbE6ca9C858177",
+          "gas_used": 3000000
+        }
+      ]
+    }
+  ]
+}
